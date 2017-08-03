@@ -1,0 +1,27 @@
+/run/verbose 2
+/run/initialize //tracking/storeTrajectory 2
+/open OGL 600x600-0+0
+/vis/sceneHandler/create OGL
+/vis/viewer/create ! ! 600x600-0+0
+/vis/viewer/refresh
+/vis/viewer/set/autoRefresh false
+/vis/verbose errors
+/vis/drawVolume
+/vis/scene/create
+/vis/scene/add/volume world
+/vis/sceneHandler/attach
+/vis/scene/add/trajectories smooth
+/tracking/storeTrajectory 2
+/vis/scene/notifyHandlers
+/vis/scene/endOfEventAction accumulate 10000
+/vis/scene/add/axes 500 500 -500 500 mm
+/vis/scene/notifyHandlers
+/vis/geometry/set/visibility labLV 0 false
+/vis/scene/notifyHandlers
+/vis/viewer/set/style wireframe
+/vis/viewer/set/background black
+/vis/viewer/set/hiddenMarker true
+/vis/viewer/set/viewpointThetaPhi 135 45
+/vis/viewer/set/autoRefresh true
+/vis/viewer/refresh
+/vis/verbose warnings

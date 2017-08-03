@@ -1,0 +1,23 @@
+/vis/open OGL 600x600-0+0
+
+/vis/viewer/set/autoRefresh false
+/vis/verbose errors
+
+/vis/drawVolume
+
+/vis/scene/add/trajectories smooth
+
+/vis/scene/endOfEventAction accumulate 10000
+
+/vis/scene/add/axes 500 500 -500 200 mm
+
+/vis/geometry/set/visibility magLV 0 false
+/vis/viewer/set/style wireframe
+
+/vis/viewer/set/hiddenMarker true
+/vis/viewer/set/viewpointThetaPhi 135 45
+
+/vis/viewer/set/autoRefresh true
+/vis/verbose warnings
+
+# avaiable colour: black, blue, brown, cyan, gray, green, grey, magenta, red, white, yellow

@@ -1,0 +1,114 @@
+#ifdef G4MULTITHREADED
+#include "G4MTRunManager.hh"
+#else
+#include "G4RunManager.hh"
+#endif
+
+#include "G4UIterminal.hh"
+#include "G4UItcsh.hh"
+#include "G4UImanager.hh"
+#include "G4VisExecutive.hh"
+#include "G4UIExecutive.hh"
+#include "Randomize.hh"
+#include "G4GDMLParser.hh"
+
+#include "QGSP_BERT.hh"
+#include "BFieldPhyLis.hh"
+#include "BFieldActIni.hh"
+#include "BFieldDetCon.hh"
+#include "BFieldPriGenAct.hh"
+#include "BFieldSteAct.hh"
+#include "BFieldRunAct.hh"
+#include "BFieldEveAct.hh"
+
+int main(int argc, char** argv)
+{
+
+  G4cout << G4endl;
+  G4cout << "Usage: BField <input_gdml_file:mandatory>"
+	 <<" <macro:optional>" << G4endl;
+  G4cout << G4endl;
+
+  if(argc < 2)
+    {
+      G4cout << "Error! Mandatory input file is not specified!" << G4endl;
+      G4cout << G4endl;
+      return -1;
+    }
+  if(argc > 3)
+    {
+      G4cout << "Error! Too many arguments!" << G4endl;
+      G4cout << G4endl;
+      return -1;
+    }
+
+  // Randomizer
+  CLHEP::RanluxEngine defaultEngine(1234567, 4);
+  G4Random::setTheEngine(&defaultEngine);
+  G4int seed = time(NULL);
+  G4Random::setTheSeed(seed);
+  
+  //Parser GDML file
+  G4GDMLParser parser;
+  parser.Read(argv[1]);
+  // Run manager
+  #ifndef G4MULTITHREADED
+  G4MTRunManager* RM = new G4MTRunManager();
+  #else
+  G4RunManager* RM = new G4RunManager();
+  #endif
+  //RM -> SetNumberOfThreads(4);
+  
+  // Detector construction	
+  BFieldDetCon* BFDC = new BFieldDetCon();
+  RM -> SetUserInitialization(BFDC);
+  
+  // Physics list
+  G4VModularPhysicsList* PL = new QGSP_BERT;
+  PL -> SetVerboseLevel(2);
+  RM -> SetUserInitialization(PL);
+  
+  BFieldActIni* BFieldB = new BFieldActIni();
+  RM -> SetUserInitialization(BFieldB);
+
+  
+  // User actions
+   RM -> SetUserInitialization(new BFieldActIni());
+  
+  //	Initialize
+  RM -> Initialize();
+  
+  // Visualization manager
+  G4VisManager* VM = new G4VisExecutive();
+  VM -> Initialize();
+  
+  //BfieldSteAct* eveAct = new BFieldEveAct();
+  //BFieldSteAct* ste = new BFieldEveAct(eveAct);
+  
+  
+
+  if ( argc == 2 )
+    {
+      G4UIsession* session = new G4UIterminal (new G4UItcsh);
+      session -> SessionStart();
+      
+      delete session;
+    }
+  
+  
+  else if(argc ==3)
+    {
+      G4String command = "/control/execute ";
+      G4String fileName = argv[1];
+      G4UImanager* UI = G4UImanager::GetUIpointer();
+      UI -> ApplyCommand(command + fileName);
+      G4UIExecutive* session = new G4UIExecutive(argc, argv);
+      session->SessionStart();
+      //ste->UserSteppingAction
+      delete session;
+    }
+  
+  delete RM;
+  
+  return 0;
+}

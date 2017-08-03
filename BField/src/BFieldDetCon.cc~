@@ -1,0 +1,142 @@
+#include "G4LogicalVolume.hh"
+#include "G4VPhysicalVolume.hh"
+#include "G4Box.hh"
+#include "G4Tubs.hh"
+#include "G4Cons.hh"
+#include "G4PVPlacement.hh"
+#include "G4SystemOfUnits.hh"
+#include "G4UniformMagField.hh"
+#include "G4FieldManager.hh"
+
+#include "BFieldDetCon.hh"
+//#include "SAXProcessor.h"
+//#include "ProcessingConfigurator.h"
+//#include "GDMLProcessor.h"
+
+BFieldDetCon::BFieldDetCon(G4VPhysicalVolume* setWorld = 0)
+{
+	ConstructMaterials();
+	DefineDimensions();
+}
+
+BFieldDetCon::~BFieldDetCon()
+{
+  //DestructMaterials();
+}
+
+void BFieldDetCon::DefineDimensions()
+{
+	// World dimensions (Laboratory size)
+  //	labX    = 8000.0 * mm; // World x dimension
+  //	labY    = 8000.0 * mm; // World y dimension
+  //	labZ    = 8000.0 * mm; // World z dimension
+
+  //	detX    = 2000 * mm;
+  //	detY    = 2000 * mm;
+  //	detZ    = 2000 * mm;
+
+	pRMin   = 10.0 * mm;
+	pRMax   = 100.0 * mm;
+	pDz     = 900.0 * mm;
+	pSPhi   = 0;
+	pDPhi   = 360;
+}
+
+G4VPhysicalVolume* BFieldDetCon::Construct()
+{
+  /*
+  SAXProcessor sxp;
+  ProcessingConfigurator config;
+  GDMLProcessor* proc = GDMLProcessor::GetInstance();
+  sxp.Initialize();
+  
+  config.SetURI("GDML.gdml");
+  config.SetSetupName("Default");
+  sxp.Configure(&config);
+  proc->SetDuplicationWarning(config.URI());
+  sxp.Run();
+
+  G4VphysicalVolume* W;
+  W = (G4VphysicalVolume*)proc->GetWorldVolume();
+  W->GetLogicaVolume()->SetVisAttributes(G4VisAttributes::Invisible);
+
+  */
+
+
+
+
+  G4GDMLParser* parser;
+  // World
+
+  G4Box* labSolid = new G4Box("labSolid", labX / 2, labY / 2, labZ / 2);
+  //  G4LogicalVolume* labLV = parser->GetVolume();
+  //  new G4LogicalVolume(labSolid, Air, "labLV");
+  G4VPhysicalVolume* labPV = parser->GetWorldVolume();
+  G4LogicalVolume* labLV = labPV->GetLogicalVolume();
+    //new G4PVPlacement(0, G4ThreeVector(), "labPV", labLV, 0, false, 0);
+ 
+  G4Material* dummyMat = new G4Material("dummyMat", 1.0,1.0*g/mole, 1e-25*g/cm3);
+  
+    
+    
+  
+  G4Tubs* g2 = new G4Tubs("g2", pRMin, pRMax, 0.5*pDz, pSPhi, pDPhi);
+  G4LogicalVolume* detLV = new G4LogicalVolume(g2, Air, "detLV");
+  //G4VPhysicalVolume* detPV = new G4PVPlacement(0, G4ThreeVector(0*mm,0,0 * mm), "detPV", detLV, labPV, false, 0);
+  // Magnetic field
+
+  new G4PVPlacement(0, G4ThreeVector(0.0,0.0,3.0 * tesla), "magPV", detLV, world, false, 0);
+
+  
+  
+  G4UniformMagField* magField = new G4UniformMagField(G4ThreeVector(0.0, 0.0, -0.01));
+  G4FieldManager* fieldMgr = new G4FieldManager(magField);
+  fieldMgr -> SetDetectorField(magField);
+  fieldMgr -> CreateChordFinder(magField);
+  world -> GetLogicalVolume()->GetDaughter(0)->GetLogicalVolume()->SetFieldManager(fieldMgr, true);
+  
+  return world;;
+}
+
+void BFieldDetCon::ConstructMaterials()
+{
+  const G4double labTemp = 300.0 * kelvin; // Room temperature
+  
+  elN  = new G4Element("Nitrogen",  "N",  7, 14.00674*g/mole);
+  elO  = new G4Element(  "Oxygen",  "O",  8, 15.9994 *g/mole);
+  elAr = new G4Element(   "Argon", "Ar", 18, 39.948  *g/mole);
+  elC = new G4Element("Carbon", "C", 6, 12.011*g/mole);
+  elH = new G4Element("Hydrogen", "H", 1, 1.00794*g/mole);
+  Air  = new G4Material("Air", 1.2929e-10*g/cm3, 3, kStateGas, labTemp);
+
+  // elSi = new G4Element("Silicon", "Si", 14, 28.09*g/cm3);
+  //Sili = new G4Material("Sili", 28.09*g/cm3, 1);
+ // Almost vacuum
+  Air -> AddElement(elN, 75.47/99.95);
+  Air -> AddElement(elO, 23.20/99.95);
+  Air -> AddElement(elAr, 1.28/99.95);
+
+  //Silicon-> AddElement(elSi, 14);
+  
+  
+  
+  Scint = new G4Material("Scintillator", 1.05*g/cm3, 2, kStateSolid, labTemp);
+  Scint -> AddElement(elC, 10);
+  Scint -> AddElement(elH, 11);
+
+  Graphite = new G4Material("Graphite", 1.7*g/cm3,3,kStateSolid,labTemp);
+  Graphite -> AddElement(elC, 99.0/100.0);
+  Graphite -> AddElement(elN, 0.7/100.0);
+  Graphite -> AddElement(elO, 0.3/100.0);
+}
+
+void BFieldDetCon::DestructMaterials()
+{
+  delete Air;
+  delete Scint;
+  delete elAr;
+  delete elO;
+  delete elN;
+  delete Graphite;
+  
+}
